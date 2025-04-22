@@ -1,22 +1,13 @@
+import io
 import logging
-import random
-import sys
-from typing import TYPE_CHECKING, Dict
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import discord
+from bd_models.models import BallInstance, Player
 from discord import app_commands
 from discord.ext import commands
 
-import asyncio
-import io
-
-from ballsdex.core.models import (
-    Ball,
-    BallInstance,
-    Player
-)
-from ballsdex.core.models import balls as countryballs
 from ballsdex.settings import settings
 
 from ballsdex.core.utils.transformers import (
@@ -24,7 +15,7 @@ from ballsdex.core.utils.transformers import (
     BallEnabledTransform
 )
 
-from ballsdex.packages.battle.xe_battle_lib import (
+from .xe_battle_lib import (
     BattleBall,
     BattleInstance,
     gen_battle,
@@ -32,8 +23,6 @@ from ballsdex.packages.battle.xe_battle_lib import (
 
 if TYPE_CHECKING:
     from ballsdex.core.bot import BallsDexBot
-
-log = logging.getLogger("ballsdex.packages.battle")
 
 battles = []
 
@@ -528,17 +517,21 @@ class Battle(commands.GroupCog):
         countryball: Ball
             The countryball you want to add.
         """
-        player, _ = await Player.get_or_create(discord_id=interaction.user.id)
-        balls = await countryball.ballinstances.filter(player=player)
+        player, _ = await Player.objects.aget_or_create(discord_id=interaction.user.id)
+        balls = await BallInstance.objects.filter(ball=countryball, player=player)
 
         count = 0
+
         async for dupe in self.add_balls(interaction, balls):
-            if not dupe:
-                count += 1
+            if dupe:
+                continue
+
+            count += 1
+
+        plural = "s" if count != 1 else ""
 
         await interaction.response.send_message(
-            f'Added {count} {countryball.country}{"s" if count != 1 else ""}!',
-            ephemeral=True,
+            f"Added {count} {countryball.country}{plural}!", ephemeral=True
         )
 
     @bulk.command(name="all")
@@ -548,32 +541,36 @@ class Battle(commands.GroupCog):
         """
         Adds all your countryballs to a battle.
         """
-        player, _ = await Player.get_or_create(discord_id=interaction.user.id)
-        balls = await BallInstance.filter(player=player)
+        player, _ = await Player.objects.aget_or_create(discord_id=interaction.user.id)
+        balls = await BallInstance.objects.filter(player=player)
 
         count = 0
+
         async for dupe in self.add_balls(interaction, balls):
-            if not dupe:
-                count += 1
+            if dupe:
+                continue
+
+            count += 1
 
         name = settings.plural_collectible_name if count != 1 else settings.collectible_name
 
         await interaction.response.send_message(f"Added {count} {name}!", ephemeral=True)
 
     @bulk.command(name="clear")
-    async def bulk_remove(
-        self, interaction: discord.Interaction
-    ):
+    async def bulk_clear(self, interaction: discord.Interaction):
         """
         Removes all your countryballs from a battle.
         """
-        player, _ = await Player.get_or_create(discord_id=interaction.user.id)
-        balls = await BallInstance.filter(player=player)
+        player, _ = await Player.objects.aget_or_create(discord_id=interaction.user.id)
+        balls = await BallInstance.objects.filter(player=player)
 
         count = 0
+
         async for not_in_battle in self.remove_balls(interaction, balls):
-            if not not_in_battle:
-                count += 1
+            if not_in_battle:
+                continue
+
+            count += 1
 
         name = settings.plural_collectible_name if count != 1 else settings.collectible_name
 
@@ -591,15 +588,19 @@ class Battle(commands.GroupCog):
         countryball: Ball
             The countryball you want to remove.
         """
-        player, _ = await Player.get_or_create(discord_id=interaction.user.id)
-        balls = await countryball.ballinstances.filter(player=player)
+        player, _ = await Player.objects.aget_or_create(discord_id=interaction.user.id)
+        balls = await BallInstance.objects.filter(ball=countryball, player=player)
 
         count = 0
+
         async for not_in_battle in self.remove_balls(interaction, balls):
-            if not not_in_battle:
-                count += 1
+            if not_in_battle:
+                continue
+
+            count += 1
+
+        plural = "s" if count != 1 else ""
 
         await interaction.response.send_message(
-            f'Removed {count} {countryball.country}{"s" if count != 1 else ""}!',
-            ephemeral=True,
+            f"Removed {count} {countryball.country}{plural}!", ephemeral=True
         )

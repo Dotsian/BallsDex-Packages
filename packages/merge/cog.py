@@ -1,8 +1,7 @@
 import logging
 import random
-import sys
-from typing import TYPE_CHECKING, Dict
-from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
 import discord
 from discord import app_commands
@@ -10,28 +9,16 @@ from discord.ext import commands
 
 from PIL import Image
 
-import asyncio
 import io
-import re
 import os
-import copy
-
-from ballsdex.core.models import Ball
-from ballsdex.core.models import BallInstance
-from ballsdex.core.models import balls as countryballs
-from ballsdex.settings import settings
 
 from ballsdex.core.utils.transformers import BallInstanceTransform
-from ballsdex.packages.battle.xe_battle_lib import (
-    BattleBall,
-    BattleInstance,
-    gen_battle,
-)
 
 from ballsdex.core.image_generator.image_gen import draw_card
 
 if TYPE_CHECKING:
     from ballsdex.core.bot import BallsDexBot
+
 log = logging.getLogger("ballsdex.packages.merge")
 
 def gen_name(name1, name2):
